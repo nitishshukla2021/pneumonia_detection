@@ -2,13 +2,24 @@ import streamlit as st
 import numpy as np
 from tensorflow.keras.models import load_model
 from PIL import Image
+import os
+import gdown
 
 # -----------------------------
-# Load Model From Local File
+# Model Download & Load
 # -----------------------------
+MODEL_PATH = "model.h5"
+MODEL_URL = "https://drive.google.com/uc?id=<FILE_ID>"  # Replace with your actual Google Drive file ID
+
+# Download model if it doesn't exist
+if not os.path.exists(MODEL_PATH):
+    st.info("Downloading model, please wait...")
+    gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+
+# Load model
 @st.cache_resource
 def load_pneumonia_model():
-    model = load_model("model.h5")
+    model = load_model(MODEL_PATH)
     return model
 
 model = load_pneumonia_model()
@@ -17,13 +28,13 @@ model = load_pneumonia_model()
 # Preprocessing Function
 # -----------------------------
 def preprocess_image(image):
-    image = image.resize((224, 224))  
-    image = image.convert("L")        
+    image = image.resize((224, 224))  # Resize image
+    image = image.convert("L")        # Convert to grayscale
     image = np.array(image)
-    image = image / 255.0             
+    image = image / 255.0             # Normalize
     image = np.expand_dims(image, axis=-1)
-    image = np.repeat(image, 3, axis=-1)
-    image = np.expand_dims(image, axis=0)
+    image = np.repeat(image, 3, axis=-1)  # Convert to 3 channels
+    image = np.expand_dims(image, axis=0) # Add batch dimension
     return image
 
 # -----------------------------
@@ -46,7 +57,7 @@ if uploaded_file is not None:
     
     # Resize for display to avoid huge image
     display_image = image.copy()
-    display_image.thumbnail((400, 400))  # max width/height 400px
+    display_image.thumbnail((400, 400))
     st.image(display_image, caption="Uploaded X-ray", use_column_width=False)
 
     # Preprocess and predict
